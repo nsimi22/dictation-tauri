@@ -372,6 +372,14 @@ pub fn run() {
             start_listening,
             stop_listening,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while running tauri application")
+        .run(|_app, event| {
+            // Skip libc finalizers so the bundled ggml-metal C++ static
+            // unique_ptr<ggml_metal_device> doesn't tear down twice and
+            // trip its own assertion (SIGABRT during __cxa_finalize_ranges).
+            if let tauri::RunEvent::Exit = event {
+                std::process::exit(0);
+            }
+        });
 }
